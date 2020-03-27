@@ -93,6 +93,17 @@ func (d *Describe) runAfterEach() {
 }
 
 func (d *Describe) run(g *G) bool {
+	getOitTest := func() Runnable {
+		for _, r := range d.children {
+
+			switch r.(type) {
+			case *Oit:
+				return r
+			}
+		}
+		return nil
+	}
+
 	failed := false
 	if d.hasTests {
 		g.reporter.BeginDescribe(d.name)
@@ -101,9 +112,16 @@ func (d *Describe) run(g *G) bool {
 			b()
 		}
 
-		for _, r := range d.children {
-			if r.run(g) {
+		only := getOitTest()
+		if only != nil {
+			if only.run(g) {
 				failed = true
+			}
+		} else {
+			for _, r := range d.children {
+				if r.run(g) {
+					failed = true
+				}
 			}
 		}
 
@@ -184,6 +202,18 @@ func (xit *Xit) run(g *G) bool {
 
 func (xit *Xit) failed(msg string, stack []string) {
 	xit.failure = nil
+}
+
+type Oit struct {
+	*It
+}
+
+func (oit *Oit) run(g *G) bool {
+	return oit.It.run(g)
+}
+
+func (oit *Oit) failed(msg string, stack []string) {
+	oit.It.failed(msg, stack)
 }
 
 func parseFlags() {
@@ -280,7 +310,27 @@ func (g *G) It(name string, h ...interface{}) {
 		if len(h) > 0 {
 			it.h = h[0]
 		}
+		if g.parent == nil {
+			return
+		}
 		g.parent.children = append(g.parent.children, Runnable(it))
+	}
+}
+
+func (g *G) Oit(name string, h ...interface{}) {
+	if matchesRegex(name) {
+		it := &It{name: name, parent: g.parent, reporter: g.reporter}
+		oit := &Oit{
+			It: it,
+		}
+		notifyParents(g.parent)
+		if len(h) > 0 {
+			it.h = h[0]
+		}
+		if g.parent == nil {
+			return
+		}
+		g.parent.children = append(g.parent.children, Runnable(oit))
 	}
 }
 
@@ -303,6 +353,9 @@ func matchesRegex(value string) bool {
 }
 
 func notifyParents(d *Describe) {
+	if d == nil {
+		return
+	}
 	d.hasTests = true
 	if d.parent != nil {
 		notifyParents(d.parent)
