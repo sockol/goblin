@@ -550,3 +550,62 @@ func TestTwoOit(t *testing.T) {
 		})
 	})
 }
+
+
+func TestXDescribe(t *testing.T) {
+	g := Goblin(t)
+
+	g.Xdescribe("Xdescribe", func() {
+
+		g.Before(func() {
+			g.Assert(4).Equal(2)
+		})
+
+		g.It("It will not run", func() {
+			g.Assert(4).Equal(2)
+		})
+		g.It("It will also not run", func() {
+			g.Assert(4).Equal(2)
+		})
+
+		g.After(func() {
+			g.Assert(4).Equal(2)
+		})
+	})
+}
+
+
+func TestXDescribeMixed(t *testing.T) {
+	g := Goblin(t)
+
+	g.Describe("Describe", func() {
+
+		g.Before(func() {
+			g.Assert(2).Equal(2)
+		})
+		g.It("It will run", func() {
+			g.Assert(2).Equal(2)
+		})
+		g.After(func() {
+			g.Assert(2).Equal(2)
+		})
+	})
+
+	g.Xdescribe("Xdescribe", func() {
+
+		g.Before(func() {
+			g.Assert(4).Equal(2)
+		})
+
+		g.It("It will not run", func() {
+			g.Assert(4).Equal(2)
+		})
+		g.It("It will also not run", func() {
+			g.Assert(4).Equal(2)
+		})
+
+		g.After(func() {
+			g.Assert(4).Equal(2)
+		})
+	})
+}
