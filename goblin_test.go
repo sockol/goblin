@@ -433,3 +433,120 @@ func TestItTimeout(t *testing.T) {
 		t.Fatal("Failed")
 	}
 }
+
+
+
+func TestOitStandalone(t *testing.T) {
+	g := Goblin(t)
+
+	g.Describe("Describe for an Oit test", func() {
+
+
+		g.Oit("Only this test will run", func() {
+			g.Assert(2).Equal(2)
+		})
+	})
+}
+
+func TestOitOneDescribeLevel(t *testing.T) {
+	g := Goblin(t)
+
+	g.Describe("Describe for an Oit with It", func() {
+
+		g.It("This will be skipped and not print", func() {
+			g.Assert(4).Equal(2)
+		})
+
+		g.It("This will also be skipped and not print", func() {
+			g.Assert(4).Equal(2)
+		})
+
+		g.Oit("Only this test will run", func() {
+			g.Assert(2).Equal(2)
+		})
+	})
+}
+
+func TestOitMixed(t *testing.T) {
+	g := Goblin(t)
+
+	g.Describe("Describe", func() {
+
+		g.Describe("Describe with It, Xit and Oit", func() {
+
+			g.It("It will not run or print", func() {
+				g.Assert(4).Equal(2)
+			})
+			g.Xit("Xit will not run or print", func() {
+				g.Assert(4).Equal(2)
+			})
+			g.Oit("Oit will run and print", func() {
+				g.Assert(2).Equal(2)
+			})
+		})
+
+		g.Describe("Describe with It only", func() {
+
+			g.It("It 1 will run and print", func() {
+				g.Assert(2).Equal(2)
+			})
+			g.It("It 2 will run and print", func() {
+				g.Assert(2).Equal(2)
+			})
+		})
+	})
+
+	g.Describe("Describe with It only", func() {
+
+		g.It("It 1 will run and print", func() {
+			g.Assert(2).Equal(2)
+		})
+		g.It("It 2 will run and print", func() {
+			g.Assert(2).Equal(2)
+		})
+	})
+
+	g.Describe("Describe with It only", func() {
+
+		g.It("It will not run and print", func() {
+			g.Assert(4).Equal(2)
+		})
+		g.Oit("Oit will run and print", func() {
+			g.Assert(2).Equal(2)
+		})
+	})
+
+	g.It("It will not run and print outside of Describe", func() {
+		g.Assert(4).Equal(2)
+	})
+
+	g.Oit("Oit will not run and print outside of Describe", func() {
+		g.Assert(2).Equal(2)
+	})
+}
+
+
+func TestOitFail(t *testing.T) {
+	g := Goblin(t)
+
+	g.Describe("Describe for an Oit test", func() {
+
+		g.Oit("Only this test will run", func() {
+			g.Assert(4).Equal(2)
+		})
+	})
+}
+
+func TestTwoOit(t *testing.T) {
+	g := Goblin(t)
+
+	g.Describe("Describe for an Oit test", func() {
+
+		g.Oit("Only this test will run", func() {
+			g.Assert(2).Equal(2)
+		})
+		g.Oit("This second Oit will not run", func() {
+			g.Assert(2).Equal(2)
+		})
+	})
+}
