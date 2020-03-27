@@ -13,11 +13,11 @@ import (
 type Done func(error ...interface{})
 
 type Runnable interface {
-	run(*G) bool
+	run(*G, bool) bool
 }
 
 type Itable interface {
-	run(*G) bool
+	run(*G, bool) bool
 	failed(string, []string)
 }
 
@@ -36,7 +36,29 @@ func (g *G) Describe(name string, h func()) {
 
 	if g.parent == nil && d.hasTests {
 		g.reporter.Begin()
-		if d.run(g) {
+		if d.run(g, false) {
+			g.t.Fail()
+		}
+		g.reporter.End()
+	}
+}
+
+func (g *G) Xdescribe(name string, h func()) {
+	d := &Describe{name: name, h: h, parent: g.parent}
+
+	if d.parent != nil {
+		d.parent.children = append(d.parent.children, Runnable(d))
+	}
+
+	g.parent = d
+
+	h()
+
+	g.parent = d.parent
+
+	if g.parent == nil && d.hasTests {
+		g.reporter.Begin()
+		if d.run(g, true) {
 			g.t.Fail()
 		}
 		g.reporter.End()
@@ -92,7 +114,7 @@ func (d *Describe) runAfterEach() {
 	}
 }
 
-func (d *Describe) run(g *G) bool {
+func (d *Describe) run(g *G, isSkipped bool) bool {
 	getOitTest := func() Runnable {
 		for _, r := range d.children {
 
@@ -106,27 +128,37 @@ func (d *Describe) run(g *G) bool {
 
 	failed := false
 	if d.hasTests {
+
 		g.reporter.BeginDescribe(d.name)
 
-		for _, b := range d.befores {
-			b()
-		}
-
-		only := getOitTest()
-		if only != nil {
-			if only.run(g) {
-				failed = true
-			}
-		} else {
+		if isSkipped {
 			for _, r := range d.children {
-				if r.run(g) {
+				if r.run(g, true) {
 					failed = true
 				}
 			}
-		}
+		}else{
 
-		for _, a := range d.afters {
-			a()
+			for _, b := range d.befores {
+				b()
+			}
+
+			only := getOitTest()
+			if only != nil {
+				if only.run(g, false) {
+					failed = true
+				}
+			} else {
+				for _, r := range d.children {
+					if r.run(g, false) {
+						failed = true
+					}
+				}
+			}
+
+			for _, a := range d.afters {
+				a()
+			}
 		}
 
 		g.reporter.EndDescribe()
@@ -150,8 +182,13 @@ type It struct {
 	isAsync  bool
 }
 
-func (it *It) run(g *G) bool {
+func (it *It) run(g *G, isSkipped bool) bool {
 	g.currentIt = it
+
+	if isSkipped {
+		g.reporter.ItIsExcluded(it.name)
+		return false
+	}
 
 	if it.h == nil {
 		g.reporter.ItIsPending(it.name)
@@ -193,7 +230,7 @@ type Xit struct {
 	isAsync  bool
 }
 
-func (xit *Xit) run(g *G) bool {
+func (xit *Xit) run(g *G, isSkipped bool) bool {
 	g.currentIt = xit
 
 	g.reporter.ItIsExcluded(xit.name)
@@ -208,8 +245,8 @@ type Oit struct {
 	*It
 }
 
-func (oit *Oit) run(g *G) bool {
-	return oit.It.run(g)
+func (oit *Oit) run(g *G, isSkipped bool) bool {
+	return oit.It.run(g, isSkipped)
 }
 
 func (oit *Oit) failed(msg string, stack []string) {
