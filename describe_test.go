@@ -171,3 +171,39 @@ func TestNestedAfter(t *testing.T) {
 		t.Fatal("Failed")
 	}
 }
+
+func TestSkipDescribe(t *testing.T) {
+	g := Goblin(t)
+
+	g.Describe("Describe will run", func() {
+
+		g.It("This will run", func() {
+			g.Assert(4).Equal(4)
+		})
+	})
+
+	g.Skip.Describe("Describe will not run", func() {
+
+		g.It("This will not run", func() {
+			t.Fatal("Failed")
+		})
+
+		g.Describe("Describe will not run also", func() {
+
+			g.It("This will not run also", func() {
+				t.Fatal("Failed")
+			})
+		})
+	})
+
+	g.Describe("Last describe will run", func() {
+
+		g.It("This will run", func() {
+			g.Assert(4).Equal(4)
+		})
+
+		g.Skip.It("This will not run also", func() {
+			t.Fatal("Failed")
+		})
+	})
+}
