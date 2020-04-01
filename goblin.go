@@ -26,6 +26,7 @@ func (g *G) Describe(name string, h func()) {
 
 	if d.parent != nil {
 		d.parent.children = append(d.parent.children, Runnable(d))
+		d.isSkipped = d.parent.isSkipped
 	}
 
 	g.parent = d
@@ -59,6 +60,7 @@ type Describe struct {
 	justBeforeEach []func()
 	hasTests       bool
 	parent         *Describe
+	isSkipped      bool
 }
 
 func (d *Describe) runBeforeEach() {
@@ -95,7 +97,12 @@ func (d *Describe) runAfterEach() {
 func (d *Describe) run(g *G) bool {
 	failed := false
 	if d.hasTests {
-		g.reporter.BeginDescribe(d.name)
+
+		if d.isSkipped {
+			g.reporter.BeginXdescribe(d.name)
+		} else {
+			g.reporter.BeginDescribe(d.name)
+		}
 
 		for _, b := range d.befores {
 			b()
@@ -135,6 +142,11 @@ type It struct {
 func (it *It) run(g *G) bool {
 	g.currentIt = it
 
+	if it.parent.isSkipped {
+		g.reporter.ItIsExcluded(it.name)
+		return false
+	}
+
 	if it.h == nil {
 		g.reporter.ItIsPending(it.name)
 		return false
@@ -172,6 +184,10 @@ type Skip struct {
 
 func (s *Skip) It(name string, h ...interface{}) {
 	s.g.Xit(name, h)
+}
+
+func (s *Skip) Describe(name string, h func()) {
+	s.g.xdescribe(name, h)
 }
 
 type Xit struct {
@@ -304,6 +320,28 @@ func (g *G) Xit(name string, h ...interface{}) {
 			xit.h = h[0]
 		}
 		g.parent.children = append(g.parent.children, Runnable(xit))
+	}
+}
+
+func (g *G) xdescribe(name string, h func()) {
+	d := &Describe{name: name, h: h, parent: g.parent, isSkipped: true}
+
+	if d.parent != nil {
+		d.parent.children = append(d.parent.children, Runnable(d))
+	}
+
+	g.parent = d
+
+	h()
+
+	g.parent = d.parent
+
+	if g.parent == nil && d.hasTests {
+		g.reporter.Begin()
+		if d.run(g) {
+			g.t.Fail()
+		}
+		g.reporter.End()
 	}
 }
 
