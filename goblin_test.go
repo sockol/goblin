@@ -433,3 +433,22 @@ func TestItTimeout(t *testing.T) {
 		t.Fatal("Failed")
 	}
 }
+
+func TestSkipIt(t *testing.T) {
+	g := Goblin(t)
+
+	g.Describe("Describe with it, xit, skip.it", func() {
+
+		g.It("This will run", func() {
+			g.Assert(4).Equal(4)
+		})
+
+		g.Xit("This will not run", func() {
+			g.Assert(4).Equal(2)
+		})
+
+		g.Skip.It("This will also not run", func() {
+			g.Assert(2).Equal(2)
+		})
+	})
+}
