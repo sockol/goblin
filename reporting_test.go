@@ -1,6 +1,8 @@
 package goblin
 
 import (
+	"fmt"
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -103,12 +105,13 @@ func TestReportingTime(t *testing.T) {
 	fakeReporter := Reporter(&reporter)
 
 	g := Goblin(fakeTest)
+	fmt.Println(os.Args, *regexParam)
 	g.SetReporter(fakeReporter)
 
 	g.Describe("One", func() {
 		g.AfterEach(func() {
 			//TODO: Make this an assertion
-			if int64(reporter.executionTime/time.Millisecond) < 5 || int64(reporter.executionTime/time.Millisecond) >= 6 {
+			if int64(reporter.executionTime/time.Millisecond) < 5 || int64(reporter.executionTime/time.Millisecond) > 6 {
 				t.FailNow()
 			}
 		})

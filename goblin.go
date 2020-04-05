@@ -214,6 +214,7 @@ func Goblin(t *testing.T, arguments ...string) *G {
 	}
 
 	g.reporter = Reporter(&DetailedReporter{fancy: fancy})
+	// fmt.Println("........", os.Args, timeout, *regexParam, runRegex)
 	return g
 }
 
@@ -296,8 +297,8 @@ func (g *G) Xit(name string, h ...interface{}) {
 }
 
 func matchesRegex(value string) bool {
-	if runRegex != nil {
-		return runRegex.MatchString(value)
+	if *regexParam != "" {
+		return regexp.MustCompile(*regexParam).MatchString(value)
 	}
 	return true
 }
