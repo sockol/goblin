@@ -439,7 +439,7 @@ func TestOnly(t *testing.T) {
 
 	g.Describe("Test", func() {
 		g.It("Skipped", func() {
-			g.Assert(4).Equal(2)
+			g.Fail("Fail")
 		})
 
 		g.Only.It("Run this only", func() {
@@ -453,7 +453,7 @@ func TestMultipleOnly(t *testing.T) {
 
 	g.Describe("Test 1", func() {
 		g.It("Skipped", func() {
-			g.Assert(4).Equal(2)
+			g.Fail("Fail")
 		})
 
 		g.Only.It("Run this 1", func() {
@@ -461,7 +461,7 @@ func TestMultipleOnly(t *testing.T) {
 		})
 
 		g.It("Skipped", func() {
-			g.Assert(4).Equal(2)
+			g.Fail("Fail")
 		})
 
 		g.Only.It("Run this 2", func() {
@@ -470,7 +470,7 @@ func TestMultipleOnly(t *testing.T) {
 
 		g.Describe("Test 2", func() {
 			g.It("Skipped", func() {
-				g.Assert(4).Equal(2)
+				g.Fail("Fail")
 			})
 
 			g.Only.It("Run this 3", func() {
@@ -478,7 +478,7 @@ func TestMultipleOnly(t *testing.T) {
 			})
 
 			g.It("Skipped", func() {
-				g.Assert(4).Equal(2)
+				g.Fail("Fail")
 			})
 
 			g.Only.It("Run this 4", func() {
@@ -488,12 +488,12 @@ func TestMultipleOnly(t *testing.T) {
 
 		g.Describe("Test 3", func() {
 			g.It("Skipped", func() {
-				g.Assert(4).Equal(2)
+				g.Fail("Fail")
 			})
 		})
 
 		g.It("Skipped", func() {
-			g.Assert(4).Equal(2)
+			g.Fail("Fail")
 		})
 
 		g.Only.It("Run this 5", func() {
@@ -507,7 +507,7 @@ func TestMultipleGoblinMultipleOnly(t *testing.T) {
 
 	g1.Describe("Test 1", func() {
 		g1.It("Skipped", func() {
-			g1.Assert(4).Equal(2)
+			g1.Fail("Fail")
 		})
 
 		g1.Only.It("Run this Only", func() {
