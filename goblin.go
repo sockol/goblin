@@ -186,6 +186,39 @@ func (xit *Xit) failed(msg string, stack []string) {
 	xit.failure = nil
 }
 
+type Only struct {
+	it *It
+	g  *G
+}
+
+func (o *Only) It(name string, h ...interface{}) {
+	g := o.g
+
+	it := &It{name: name, parent: g.parent, reporter: g.reporter}
+	only := &Only{it: it}
+	g.hasOnly = true
+
+	notifyParents(g.parent)
+	if len(h) > 0 {
+		only.it.h = h[0]
+	}
+	g.parent.children = append(g.parent.children, Runnable(only))
+}
+
+func (o *Only) run(g *G) bool {
+	return o.it.run(g)
+}
+
+func (o *Only) failed(msg string, stack []string) {
+	o.it.failed(msg, stack)
+}
+
+func (o *Only) hasOnly() bool {
+	return true
+}
+
+func (o *Only) clearChildren() {}
+
 func parseFlags() {
 	//Flag parsing
 	flag.Parse()
@@ -206,6 +239,10 @@ func Goblin(t *testing.T, arguments ...string) *G {
 		parseFlags()
 	}
 	g := &G{t: t, timeout: *timeout}
+	o := &Only{
+		g: g,
+	}
+	g.Only = o
 	var fancy TextFancier
 	if *isTty {
 		fancy = &TerminalFancier{}
@@ -267,6 +304,7 @@ type G struct {
 	shouldContinue chan bool
 	mutex          sync.Mutex
 	timer          *time.Timer
+	Only           *Only
 }
 
 func (g *G) SetReporter(r Reporter) {
