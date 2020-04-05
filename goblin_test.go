@@ -523,3 +523,55 @@ func TestMultipleGoblinMultipleOnly(t *testing.T) {
 		})
 	})
 }
+
+func TestOnlyDescribe(t *testing.T) {
+	g := Goblin(t)
+
+	g.Describe("Test 1", func() {
+		g.Only.Describe("Test only 1", func() {
+			g.It("Run this", func() {
+				g.Assert(2).Equal(2)
+			})
+		})
+
+		g.Describe("Skip this", func() {
+			g.It("Skip this", func() {
+				g.Fail("Fail")
+			})
+		})
+
+		g.It("Skip this", func() {
+			g.Fail("Fail")
+		})
+	})
+
+	g.Only.Describe("Test only 2", func() {
+		g.It("Run this", func() {
+			g.Assert(2).Equal(2)
+		})
+		g.It("Run this also", func() {
+			g.Assert(2).Equal(2)
+		})
+	})
+}
+
+func TestOnlyDescribeWithOnlyIt(t *testing.T) {
+	g := Goblin(t)
+
+	g.Describe("Describe", func() {
+		g.Only.Describe("Test only 1", func() {
+			g.It("Run this within Only.Describe()", func() {
+				g.Assert(2).Equal(2)
+			})
+		})
+	})
+
+	g.Only.Describe("Describe", func() {
+		g.It("This will not run", func() {
+			g.Fail("Fail")
+		})
+		g.Only.It("Run this Only.It()", func() {
+			g.Assert(2).Equal(2)
+		})
+	})
+}
