@@ -37,7 +37,13 @@ func (g *G) Describe(name string, h func()) {
 
 	g.parent = d.parent
 
-	if g.parent == nil && d.hasTests {
+	isRootDescribe := g.parent == nil
+	if isRootDescribe && d.hasTests {
+
+		if d.hasOnly() {
+			d.clearChildren()
+		}
+
 		g.reporter.Begin()
 		if d.run(g) {
 			g.t.Fail()
