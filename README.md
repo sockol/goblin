@@ -100,6 +100,46 @@ Yes! Goblin will help you to test asynchronous things, like goroutines, etc. You
 
 Goblin will wait for the ```done``` call, a ```Fail``` call or any false assertion.
 
+Can I specify what tests I want to run?
+----------------
+
+Yes! Goblin will run every ```Only``` test within a given goblin instance. 
+
+```go
+package foobar
+
+import (
+    "testing"
+    . "github.com/franela/goblin"
+)
+
+func Test(t *testing.T) {
+    g := Goblin(t)
+    g.Describe("Numbers", func() {
+        // Excluded Test
+        g.It("This test will not run", func() {
+            g.Assert(2).Equal(4)
+        })
+        // Passing Test
+        g.Only.It("Should match equal numbers", func() {
+            g.Assert(2).Equal(2)
+        })
+
+        g.Describe("Nested Numbers", func() {
+            // Passing Test
+            g.Only.It("Should also match equal numbers", func() {
+                g.Assert(4).Equal(4)
+            })
+        })
+    })
+}
+```
+
+The ouput will be:
+
+![](https://github.com/marcosnils/goblin/blob/master/goblin_output.png?raw=true)
+
+
 How do I use it with Gomega?
 ----------------------------
 
