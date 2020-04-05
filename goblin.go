@@ -13,6 +13,9 @@ import (
 type Done func(error ...interface{})
 
 type Runnable interface {
+	getChildren() []Runnable
+	setChildren([]Runnable)
+	hasOnly() bool
 	run(*G) bool
 }
 
@@ -59,6 +62,44 @@ type Describe struct {
 	justBeforeEach []func()
 	hasTests       bool
 	parent         *Describe
+}
+
+func (d *Describe) getChildren() []Runnable {
+	return d.children
+}
+
+func (d *Describe) setChildren(c []Runnable) {
+	d.children = c
+}
+
+// Check if this describe block has an .Only() test
+func (d *Describe) hasOnly() bool {
+
+	for _, c := range d.getChildren() {
+		// Iterate further inwards. If it is a Describe block, continue iterating.
+		// If it's an It/Xit, continue looping
+		// Else it's an Only block
+		if c.hasOnly() {
+			return true
+		}
+	}
+	return false
+}
+
+// Clear tests that are not added though Only().
+func (d *Describe) clearChildren() {
+	if d == nil {
+		return
+	}
+	filteredChildren := []Runnable{}
+	for _, c := range d.getChildren() {
+
+		// Describe and Only blocks will be appended.
+		if c.hasOnly() {
+			filteredChildren = append(filteredChildren, c)
+		}
+	}
+	d.setChildren(filteredChildren)
 }
 
 func (d *Describe) runBeforeEach() {
@@ -132,6 +173,16 @@ type It struct {
 	isAsync  bool
 }
 
+func (it *It) getChildren() []Runnable {
+	return []Runnable{}
+}
+
+func (it *It) setChildren(c []Runnable) {}
+
+func (it *It) hasOnly() bool {
+	return false
+}
+
 func (it *It) run(g *G) bool {
 	g.currentIt = it
 
@@ -175,6 +226,16 @@ type Xit struct {
 	isAsync  bool
 }
 
+func (xit *Xit) getChildren() []Runnable {
+	return []Runnable{}
+}
+
+func (xit *Xit) setChildren(c []Runnable) {}
+
+func (xit *Xit) hasOnly() bool {
+	return false
+}
+
 func (xit *Xit) run(g *G) bool {
 	g.currentIt = xit
 
@@ -205,6 +266,14 @@ func (o *Only) It(name string, h ...interface{}) {
 	g.parent.children = append(g.parent.children, Runnable(only))
 }
 
+func (o *Only) getChildren() []Runnable {
+	return o.it.getChildren()
+}
+
+func (o *Only) setChildren(c []Runnable) {
+	o.it.setChildren(c)
+}
+
 func (o *Only) run(g *G) bool {
 	return o.it.run(g)
 }
@@ -216,8 +285,6 @@ func (o *Only) failed(msg string, stack []string) {
 func (o *Only) hasOnly() bool {
 	return true
 }
-
-func (o *Only) clearChildren() {}
 
 func parseFlags() {
 	//Flag parsing
@@ -305,6 +372,7 @@ type G struct {
 	mutex          sync.Mutex
 	timer          *time.Timer
 	Only           *Only
+	hasOnly        bool
 }
 
 func (g *G) SetReporter(r Reporter) {
@@ -312,25 +380,33 @@ func (g *G) SetReporter(r Reporter) {
 }
 
 func (g *G) It(name string, h ...interface{}) {
-	if matchesRegex(name) {
-		it := &It{name: name, parent: g.parent, reporter: g.reporter}
-		notifyParents(g.parent)
-		if len(h) > 0 {
-			it.h = h[0]
-		}
-		g.parent.children = append(g.parent.children, Runnable(it))
+	if !matchesRegex(name) {
+		return
 	}
+	if g.hasOnly {
+		return
+	}
+	it := &It{name: name, parent: g.parent, reporter: g.reporter}
+	notifyParents(g.parent)
+	if len(h) > 0 {
+		it.h = h[0]
+	}
+	g.parent.children = append(g.parent.children, Runnable(it))
 }
 
 func (g *G) Xit(name string, h ...interface{}) {
-	if matchesRegex(name) {
-		xit := &Xit{name: name, parent: g.parent, reporter: g.reporter}
-		notifyParents(g.parent)
-		if len(h) > 0 {
-			xit.h = h[0]
-		}
-		g.parent.children = append(g.parent.children, Runnable(xit))
+	if !matchesRegex(name) {
+		return
 	}
+	if g.hasOnly {
+		return
+	}
+	xit := &Xit{name: name, parent: g.parent, reporter: g.reporter}
+	notifyParents(g.parent)
+	if len(h) > 0 {
+		xit.h = h[0]
+	}
+	g.parent.children = append(g.parent.children, Runnable(xit))
 }
 
 func matchesRegex(value string) bool {
