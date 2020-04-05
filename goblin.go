@@ -254,6 +254,7 @@ func (xit *Xit) failed(msg string, stack []string) {
 }
 
 type Only struct {
+	d  *Describe
 	it *It
 	g  *G
 }
@@ -272,6 +273,37 @@ func (o *Only) It(name string, h ...interface{}) {
 	g.parent.children = append(g.parent.children, Runnable(only))
 }
 
+func (o *Only) Describe(name string, h func()) {
+	g := o.g
+
+	d := &Describe{name: name, h: h, parent: g.parent}
+	only := &Only{d: d}
+
+	if d.parent != nil {
+		d.parent.children = append(d.parent.children, Runnable(only))
+	}
+
+	g.parent = d
+
+	h()
+
+	g.parent = d.parent
+
+	isRootDescribe := g.parent == nil
+	if isRootDescribe && d.hasTests {
+
+		if d.hasOnly() {
+			d.clearChildren()
+		}
+
+		g.reporter.Begin()
+		if d.run(g) {
+			g.t.Fail()
+		}
+		g.reporter.End()
+	}
+}
+
 func (o *Only) getChildren() []Runnable {
 	return o.it.getChildren()
 }
@@ -281,6 +313,9 @@ func (o *Only) setChildren(c []Runnable) {
 }
 
 func (o *Only) run(g *G) bool {
+	if o.d != nil {
+		return o.d.run(g)
+	}
 	return o.it.run(g)
 }
 
